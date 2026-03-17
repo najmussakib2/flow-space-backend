@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowSpace API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080B11;
+      --bg2: #0D1117;
+      --bg3: #111820;
+      --border: rgba(255,255,255,0.06);
+      --border-bright: rgba(99,102,241,0.4);
+      --indigo: #6366F1;
+      --indigo-dim: rgba(99,102,241,0.15);
+      --indigo-glow: rgba(99,102,241,0.08);
+      --cyan: #22D3EE;
+      --green: #10B981;
+      --amber: #F59E0B;
+      --red: #EF4444;
+      --text: #F1F5F9;
+      --text-muted: #64748B;
+      --text-dim: #94A3B8;
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* ── GRADIENT ORBS ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 { width: 600px; height: 600px; background: rgba(99,102,241,0.12); top: -200px; right: -100px; animation: drift1 20s ease-in-out infinite; }
+    .orb-2 { width: 400px; height: 400px; background: rgba(34,211,238,0.06); bottom: 100px; left: -100px; animation: drift2 25s ease-in-out infinite; }
+    .orb-3 { width: 300px; height: 300px; background: rgba(16,185,129,0.05); top: 50%; left: 50%; animation: drift3 18s ease-in-out infinite; }
+
+    @keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-50px, 80px) scale(1.1); } }
+    @keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(60px,-40px) scale(0.9); } }
+    @keyframes drift3 { 0%,100% { transform: translate(-50%,-50%) scale(1); } 50% { transform: translate(-50%,-50%) scale(1.2); } }
+
+    /* ── LAYOUT ── */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: relative;
+      z-index: 1;
+      padding: 32px 0 0;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--indigo);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 20px rgba(99,102,241,0.4);
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-text span { color: var(--indigo); }
+
+    .header-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg3); color: var(--text); border-color: rgba(255,255,255,0.12); }
+
+    .btn-primary {
+      background: var(--indigo);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(99,102,241,0.3);
+    }
+    .btn-primary:hover { background: #5558e8; box-shadow: 0 0 30px rgba(99,102,241,0.5); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 80px 0 60px;
+      animation: fadeUp 0.7s ease 0.1s both;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: var(--indigo-dim);
+      border: 1px solid var(--border-bright);
+      border-radius: 100px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #a5b4fc;
+      margin-bottom: 28px;
+      letter-spacing: 0.05em;
+    }
+
+    .hero-badge-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .hero-title {
+      font-size: clamp(42px, 6vw, 72px);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.04em;
+      margin-bottom: 20px;
+    }
+
+    .hero-title .accent { color: var(--indigo); position: relative; }
+    .hero-title .accent::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--indigo);
+      border-radius: 2px;
+      opacity: 0.4;
+    }
+
+    .hero-desc {
+      font-size: 18px;
+      color: var(--text-dim);
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 36px;
+      font-weight: 400;
+    }
+
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 60px; }
+
+    .hero-stats {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .stat { display: flex; flex-direction: column; gap: 4px; }
+    .stat-num {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.03em;
+    }
+    .stat-num span { color: var(--indigo); }
+    .stat-label { font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); }
+
+    /* ── URL BAR ── */
+    .url-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 60px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      animation: fadeUp 0.7s ease 0.2s both;
+    }
+
+    .url-method {
+      padding: 3px 8px;
+      background: rgba(16,185,129,0.15);
+      color: var(--green);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .url-path { color: var(--text-dim); }
+    .url-path span { color: var(--indigo); }
+    .url-response { margin-left: auto; color: var(--green); font-size: 12px; }
+
+    /* ── SECTION TITLE ── */
+    .section { padding: 60px 0; animation: fadeUp 0.6s ease both; }
+    .section + .section { border-top: 1px solid var(--border); }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--indigo);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 32px;
+      color: var(--text);
+    }
+
+    /* ── STACK GRID ── */
+    .stack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .stack-card {
+      padding: 20px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+      cursor: default;
+    }
+
+    .stack-card:hover {
+      border-color: var(--border-bright);
+      background: var(--bg3);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+
+    .stack-icon { font-size: 24px; margin-bottom: 10px; }
+    .stack-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .stack-desc { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); line-height: 1.5; }
+
+    /* ── MODULES ── */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .module-card {
+      padding: 24px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .module-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--indigo);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .module-card:hover { border-color: var(--border-bright); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+    .module-card:hover::before { opacity: 1; }
+
+    .module-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .module-icon {
+      width: 36px; height: 36px;
+      background: var(--indigo-dim);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .module-name { font-size: 15px; font-weight: 600; }
+    .module-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px; }
+
+    .module-endpoints {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .endpoint-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .tag-get { background: rgba(16,185,129,0.12); color: #34d399; }
+    .tag-post { background: rgba(99,102,241,0.12); color: #a5b4fc; }
+    .tag-patch { background: rgba(245,158,11,0.12); color: #fbbf24; }
+    .tag-delete { background: rgba(239,68,68,0.12); color: #f87171; }
+
+    /* ── ENDPOINTS TABLE ── */
+    .endpoints-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .endpoints-table th {
+      text-align: left;
+      padding: 10px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .endpoints-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .endpoints-table tr:last-child td { border-bottom: none; }
+    .endpoints-table tr:hover td { background: var(--indigo-glow); }
+
+    .endpoints-table .path {
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    .endpoints-table .path span { color: var(--cyan); }
+    .endpoints-table .desc { color: var(--text-muted); }
+
+    .method-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      min-width: 52px;
+      text-align: center;
+    }
+
+    .m-get { background: rgba(16,185,129,0.15); color: #34d399; }
+    .m-post { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+    .m-patch { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .m-delete { background: rgba(239,68,68,0.15); color: #f87171; }
+
+    .table-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    /* ── PACKAGES ── */
+    .packages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+    }
+
+    .pkg-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+
+    .pkg-card:hover { border-color: var(--border-bright); background: var(--bg3); }
+
+    .pkg-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .pkg-info { flex: 1; min-width: 0; }
+    .pkg-name { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pkg-role { font-size: 11px; color: var(--text-muted); }
+
+    /* ── WS EVENTS ── */
+    .ws-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 640px) { .ws-grid { grid-template-columns: 1fr; } }
+
+    .ws-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .ws-box-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ws-direction-in { color: var(--cyan); }
+    .ws-direction-out { color: var(--amber); }
+
+    .ws-event {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .ws-event:last-child { border-bottom: none; }
+
+    .ws-event-name { font-family: var(--font-mono); color: var(--text-dim); }
+    .ws-event-desc { color: var(--text-muted); font-size: 11px; }
+
+    /* ── AUTH FLOW ── */
+    .auth-flow {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .flow-step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .flow-step:last-child { margin-bottom: 0; }
+
+    .flow-num {
+      width: 28px; height: 28px;
+      background: var(--indigo-dim);
+      border: 1px solid var(--border-bright);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      color: #a5b4fc;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .flow-content { flex: 1; }
+    .flow-title { color: var(--text); margin-bottom: 4px; font-size: 13px; }
+    .flow-detail { color: var(--text-muted); font-size: 11px; line-height: 1.6; }
+    .flow-code { color: var(--cyan); }
+
+    .flow-arrow {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 4px 0 4px 13px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      margin-top: 20px;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-text { font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); }
+    .footer-text span { color: var(--indigo); }
+
+    .footer-links { display: flex; gap: 20px; }
+    .footer-link { font-size: 13px; color: var(--text-muted); text-decoration: none; font-family: var(--font-mono); transition: color 0.2s; }
+    .footer-link:hover { color: var(--text); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #1e2a3a; }
+  </style>
+</head>
+<body>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="container">
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-icon">⚡</div>
+          <div class="logo-text">Flow<span>Space</span></div>
+        </div>
+        <div class="header-links">
+          <a href="/api/docs" class="btn btn-ghost">📖 Swagger</a>
+          <a href="/api/v1/health" class="btn btn-primary">● Live</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="container">
+    <div class="hero">
+      <div class="hero-badge">
+        <div class="hero-badge-dot"></div>
+        API v1.0.0 · Running on NestJS 10
+      </div>
+      <h1 class="hero-title">
+        AI-Augmented<br/>
+        Team <span class="accent">Productivity</span><br/>
+        OS — Backend
+      </h1>
+      <p class="hero-desc">
+        A production-grade REST + WebSocket API powering real-time collaboration, Kanban boards, rich document editing, AI assistance, and event-driven notifications.
+      </p>
+      <div class="hero-actions">
+        <a href="/api/docs" class="btn btn-primary">Explore API Docs →</a>
+        <a href="/api/v1/health" class="btn btn-ghost">Health Check</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><div class="stat-num">11<span>+</span></div><div class="stat-label">modules</div></div>
+        <div class="stat"><div class="stat-num">40<span>+</span></div><div class="stat-label">endpoints</div></div>
+        <div class="stat"><div class="stat-num">8<span>+</span></div><div class="stat-label">ws events</div></div>
+        <div class="stat"><div class="stat-num">14<span>+</span></div><div class="stat-label">db models</div></div>
+      </div>
+    </div>
+
+    <!-- URL BAR -->
+    <div class="url-bar">
+      <span class="url-method">BASE</span>
+      <span class="url-path">http://localhost:3001 <span>/ api / v1 / {resource}</span></span>
+      <span class="url-response">✓ 200 OK</span>
+    </div>
+
+    <!-- STACK -->
+    <div class="section delay-1">
+      <div class="section-label">Architecture</div>
+      <div class="section-title">Core Tech Stack</div>
+      <div class="stack-grid">
+        <div class="stack-card">
+          <div class="stack-icon">🏗️</div>
+          <div class="stack-name">NestJS 10</div>
+          <div class="stack-desc">Framework · Modular DI architecture with decorators</div>
+        </div>
+        <div class="stack-card">
+          <div class="stack-icon">🐘</div>
+          <div class="stack-name">PostgreSQL 16</div>
+          <div class="stack-desc">Primary database · JSONB, full-text search, indexes</div>
+        </div>
+        <div class="stack-card">
+          <div class="stack-icon">🔺</div>
+          <div class="stack-name">Prisma 7</div>
+          <div class="stack-desc">ORM · Type-safe queries, migrations, seeding</div>
+        </div>
+        <div class="stack-card">
+          <div class="stack-icon">⚡</div>
+          <div class="stack-name">Redis 7</div>
+          <div class="stack-desc">Cache · WS presence tracking, session store</div>
+        </div>
+        <div class="stack-card">
+          <div class="stack-icon">🔌</div>
+          <div class="stack-name">Socket.io 4</div>
+          <div class="stack-desc">WebSockets · Real-time rooms, cursor presence</div>
+        </div>
+        <div class="stack-card">
+          <div class="stack-icon">🤖</div>
+          <div class="stack-name">OpenAI GPT-4o</div>
+          <div class="stack-desc">AI · Summarize docs, generate subtasks, chat</div>
+        </div>
+        <div class="stack-card">
+          <div class="stack-icon">🔐</div>
+          <div class="stack-name">JWT + Passport</div>
+          <div class="stack-desc">Auth · Access/refresh tokens + Google OAuth 2.0</div>
+        </div>
+        <div class="stack-card">
+          <div class="stack-icon">☁️</div>
+          <div class="stack-name">Cloudinary</div>
+          <div class="stack-desc">Storage · Presigned uploads, file attachments</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODULES -->
+    <div class="section delay-2">
+      <div class="section-label">Structure</div>
+      <div class="section-title">API Modules</div>
+      <div class="modules-grid">
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">🔐</div>
+            <div class="module-name">Auth</div>
+          </div>
+          <div class="module-desc">JWT access/refresh token rotation, Google OAuth 2.0, session management in PostgreSQL.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-post">POST /register</span>
+            <span class="endpoint-tag tag-post">POST /login</span>
+            <span class="endpoint-tag tag-post">POST /refresh</span>
+            <span class="endpoint-tag tag-get">GET /google</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">🏢</div>
+            <div class="module-name">Workspaces</div>
+          </div>
+          <div class="module-desc">Multi-tenant root. RBAC with Owner / Admin / Member / Guest hierarchy. Invite system.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-post">POST /</span>
+            <span class="endpoint-tag tag-get">GET /:slug</span>
+            <span class="endpoint-tag tag-post">POST /invite</span>
+            <span class="endpoint-tag tag-delete">DELETE /member</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">📋</div>
+            <div class="module-name">Projects</div>
+          </div>
+          <div class="module-desc">Auto-creates 4 default Kanban columns on creation. Soft delete, icons, colors.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-post">POST /</span>
+            <span class="endpoint-tag tag-get">GET /workspace/:id</span>
+            <span class="endpoint-tag tag-get">GET /:id</span>
+            <span class="endpoint-tag tag-patch">PATCH /:id</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">✅</div>
+            <div class="module-name">Tasks</div>
+          </div>
+          <div class="module-desc">Full CRUD with fractional ordering for drag-and-drop. Move between boards fires real-time events.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-post">POST /</span>
+            <span class="endpoint-tag tag-patch">PATCH /:id/move</span>
+            <span class="endpoint-tag tag-post">POST /comments</span>
+            <span class="endpoint-tag tag-delete">DELETE /:id</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">📝</div>
+            <div class="module-name">Documents</div>
+          </div>
+          <div class="module-desc">Tiptap-compatible JSON storage. Real-time collaborative editing via WebSocket rooms.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-post">POST /</span>
+            <span class="endpoint-tag tag-get">GET /project/:id</span>
+            <span class="endpoint-tag tag-patch">PATCH /:id</span>
+            <span class="endpoint-tag tag-delete">DELETE /:id</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">🔔</div>
+            <div class="module-name">Notifications</div>
+          </div>
+          <div class="module-desc">Event-driven. Tasks fire events → notifications service listens → DB + WebSocket push. Zero coupling.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-get">GET /</span>
+            <span class="endpoint-tag tag-patch">PATCH /:id/read</span>
+            <span class="endpoint-tag tag-patch">PATCH /read-all</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">🔍</div>
+            <div class="module-name">Search</div>
+          </div>
+          <div class="module-desc">Case-insensitive search across tasks, documents, and projects scoped to a workspace.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-get">GET /?q=&workspaceId=</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">🤖</div>
+            <div class="module-name">AI</div>
+          </div>
+          <div class="module-desc">OpenAI GPT-4o-mini powered. Summarize documents, auto-generate subtasks, free-form chat.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-post">POST /summarize</span>
+            <span class="endpoint-tag tag-post">POST /generate-subtasks</span>
+            <span class="endpoint-tag tag-post">POST /chat</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">📁</div>
+            <div class="module-name">Uploads</div>
+          </div>
+          <div class="module-desc">Cloudinary signed upload flow. Frontend uploads directly — no file data through backend.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-post">POST /presigned-url</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">📊</div>
+            <div class="module-name">Activity</div>
+          </div>
+          <div class="module-desc">Audit log. Listens to task events and writes structured logs per project and task.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-get">Event-driven</span>
+          </div>
+        </div>
+
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">⚡</div>
+            <div class="module-name">Gateway</div>
+          </div>
+          <div class="module-desc">WebSocket gateway. Redis-backed presence. Workspace rooms. Document collaboration rooms.</div>
+          <div class="module-endpoints">
+            <span class="endpoint-tag tag-get">ws://localhost:3001/ws</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ENDPOINTS -->
+    <div class="section delay-2">
+      <div class="section-label">Reference</div>
+      <div class="section-title">Key Endpoints</div>
+      <div class="table-wrap">
+        <table class="endpoints-table">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/auth/<span>register</span></td><td class="desc">Register new user</td></tr>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/auth/<span>login</span></td><td class="desc">Login with email + password</td></tr>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/auth/<span>refresh</span></td><td class="desc">Rotate refresh token</td></tr>
+            <tr><td><span class="method-badge m-get">GET</span></td><td class="path">/auth/<span>google</span></td><td class="desc">Initiate Google OAuth</td></tr>
+            <tr><td><span class="method-badge m-get">GET</span></td><td class="path">/users/<span>me</span></td><td class="desc">Get current user + workspaces</td></tr>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/workspaces</td><td class="desc">Create workspace</td></tr>
+            <tr><td><span class="method-badge m-get">GET</span></td><td class="path">/workspaces/<span>:slug</span></td><td class="desc">Get workspace with members + projects</td></tr>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/projects</td><td class="desc">Create project (auto-creates 4 boards)</td></tr>
+            <tr><td><span class="method-badge m-get">GET</span></td><td class="path">/projects/<span>:id</span></td><td class="desc">Full board with all tasks</td></tr>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/tasks</td><td class="desc">Create task</td></tr>
+            <tr><td><span class="method-badge m-patch">PATCH</span></td><td class="path">/tasks/<span>:id</span>/move</td><td class="desc">Move task between columns</td></tr>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/tasks/<span>:id</span>/comments</td><td class="desc">Add comment to task</td></tr>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/documents</td><td class="desc">Create document</td></tr>
+            <tr><td><span class="method-badge m-get">GET</span></td><td class="path">/notifications</td><td class="desc">Paginated notifications</td></tr>
+            <tr><td><span class="method-badge m-get">GET</span></td><td class="path">/search<span>?q=&workspaceId=</span></td><td class="desc">Global search</td></tr>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/ai/<span>generate-subtasks</span></td><td class="desc">AI subtask generation</td></tr>
+            <tr><td><span class="method-badge m-post">POST</span></td><td class="path">/uploads/<span>presigned-url</span></td><td class="desc">Get Cloudinary upload URL</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- WEBSOCKET -->
+    <div class="section delay-3">
+      <div class="section-label">Real-time</div>
+      <div class="section-title">WebSocket Events</div>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;font-family:var(--font-mono);">
+        Connect to <span style="color:var(--cyan)">ws://localhost:3001/ws</span> · Auth via <span style="color:var(--indigo)">handshake.auth.token</span>
+      </p>
+      <div class="ws-grid">
+        <div class="ws-box">
+          <div class="ws-box-header ws-direction-in">↑ Client → Server</div>
+          <div class="ws-event"><span class="ws-event-name">join:workspace</span><span class="ws-event-desc">workspaceId</span></div>
+          <div class="ws-event"><span class="ws-event-name">leave:workspace</span><span class="ws-event-desc">workspaceId</span></div>
+          <div class="ws-event"><span class="ws-event-name">join:document</span><span class="ws-event-desc">documentId</span></div>
+          <div class="ws-event"><span class="ws-event-name">document:update</span><span class="ws-event-desc">content + version</span></div>
+          <div class="ws-event"><span class="ws-event-name">cursor:update</span><span class="ws-event-desc">position + color</span></div>
+          <div class="ws-event"><span class="ws-event-name">ping</span><span class="ws-event-desc">heartbeat</span></div>
+        </div>
+        <div class="ws-box">
+          <div class="ws-box-header ws-direction-out">↓ Server → Client</div>
+          <div class="ws-event"><span class="ws-event-name">notification:new</span><span class="ws-event-desc">Notification payload</span></div>
+          <div class="ws-event"><span class="ws-event-name">member:online</span><span class="ws-event-desc">userId joined workspace</span></div>
+          <div class="ws-event"><span class="ws-event-name">member:offline</span><span class="ws-event-desc">userId left workspace</span></div>
+          <div class="ws-event"><span class="ws-event-name">collaborator:joined</span><span class="ws-event-desc">userId joined document</span></div>
+          <div class="ws-event"><span class="ws-event-name">document:updated</span><span class="ws-event-desc">content + version</span></div>
+          <div class="ws-event"><span class="ws-event-name">cursor:updated</span><span class="ws-event-desc">userId + position</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTH FLOW -->
+    <div class="section delay-3">
+      <div class="section-label">Security</div>
+      <div class="section-title">Auth Flow</div>
+      <div class="auth-flow">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-content">
+            <div class="flow-title">Register or Login</div>
+            <div class="flow-detail">Returns <span class="flow-code">accessToken</span> (15m) + <span class="flow-code">refreshToken</span> (7d). Refresh token stored in PostgreSQL sessions table.</div>
+          </div>
+        </div>
+        <div class="flow-arrow"></div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-content">
+            <div class="flow-title">Authenticate Requests</div>
+            <div class="flow-detail">Pass <span class="flow-code">Authorization: Bearer &lt;accessToken&gt;</span> header on every request. Global JWT guard protects all routes. Use <span class="flow-code">@Public()</span> to opt out.</div>
+          </div>
+        </div>
+        <div class="flow-arrow"></div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-content">
+            <div class="flow-title">Token Rotation</div>
+            <div class="flow-detail">When access token expires, call <span class="flow-code">POST /auth/refresh</span> with your refresh token. Returns a new access token AND a new refresh token (old one is invalidated).</div>
+          </div>
+        </div>
+        <div class="flow-arrow"></div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <div class="flow-content">
+            <div class="flow-title">WebSocket Auth</div>
+            <div class="flow-detail">Pass JWT in <span class="flow-code">socket.io</span> handshake: <span class="flow-code">{ auth: { token: accessToken } }</span>. Gateway validates on connect and registers presence in Redis.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PACKAGES -->
+    <div class="section delay-4">
+      <div class="section-label">Dependencies</div>
+      <div class="section-title">NPM Packages</div>
+      <div class="packages-grid">
+        <div class="pkg-card"><div class="pkg-dot" style="background:#6366F1"></div><div class="pkg-info"><div class="pkg-name">@nestjs/core</div><div class="pkg-role">Framework core</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#6366F1"></div><div class="pkg-info"><div class="pkg-name">@nestjs/jwt</div><div class="pkg-role">JWT auth</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#6366F1"></div><div class="pkg-info"><div class="pkg-name">@nestjs/passport</div><div class="pkg-role">Auth strategies</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#6366F1"></div><div class="pkg-info"><div class="pkg-name">@nestjs/event-emitter</div><div class="pkg-role">Decoupled events</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#6366F1"></div><div class="pkg-info"><div class="pkg-name">@nestjs/websockets</div><div class="pkg-role">WS gateway</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#6366F1"></div><div class="pkg-info"><div class="pkg-name">@nestjs/swagger</div><div class="pkg-role">OpenAPI docs</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#6366F1"></div><div class="pkg-info"><div class="pkg-name">@nestjs/throttler</div><div class="pkg-role">Rate limiting</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#22D3EE"></div><div class="pkg-info"><div class="pkg-name">@prisma/client</div><div class="pkg-role">Type-safe ORM</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#22D3EE"></div><div class="pkg-info"><div class="pkg-name">@prisma/adapter-pg</div><div class="pkg-role">Postgres adapter</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#10B981"></div><div class="pkg-info"><div class="pkg-name">ioredis</div><div class="pkg-role">Redis client</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#10B981"></div><div class="pkg-info"><div class="pkg-name">socket.io</div><div class="pkg-role">WebSocket server</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#F59E0B"></div><div class="pkg-info"><div class="pkg-name">passport-jwt</div><div class="pkg-role">JWT strategy</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#F59E0B"></div><div class="pkg-info"><div class="pkg-name">passport-google-oauth20</div><div class="pkg-role">Google OAuth</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#EF4444"></div><div class="pkg-info"><div class="pkg-name">bcrypt</div><div class="pkg-role">Password hashing</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#EF4444"></div><div class="pkg-info"><div class="pkg-name">openai</div><div class="pkg-role">GPT-4o-mini AI</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#a78bfa"></div><div class="pkg-info"><div class="pkg-name">cloudinary</div><div class="pkg-role">File storage</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#a78bfa"></div><div class="pkg-info"><div class="pkg-name">class-validator</div><div class="pkg-role">DTO validation</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#a78bfa"></div><div class="pkg-info"><div class="pkg-name">class-transformer</div><div class="pkg-role">Auto-transform</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#64748B"></div><div class="pkg-info"><div class="pkg-name">uuid</div><div class="pkg-role">Refresh token IDs</div></div></div>
+        <div class="pkg-card"><div class="pkg-dot" style="background:#64748B"></div><div class="pkg-info"><div class="pkg-name">pg</div><div class="pkg-role">Postgres pool driver</div></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-text">FlowSpace API · Built with <span>NestJS + Prisma + Redis</span></div>
+        <div class="footer-links">
+          <a href="/api/docs" class="footer-link">Swagger</a>
+          <a href="/api/v1/health" class="footer-link">Health</a>
+          <a href="/api/v1/auth/me" class="footer-link">Auth</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
