@@ -13,6 +13,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../redis/redis.service';
 import { GatewayService } from './gateway.service';
+import config from 'config';
 
 @WebSocketGateway({
   cors: { origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true },
@@ -41,7 +42,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       if (!token) { client.disconnect(); return; }
 
       const payload = this.jwtService.verify(token, {
-        secret: this.configService.get('jwt.accessSecret'),
+        secret: this.configService.get('jwt.accessSecret') ?? config.jwt.accessSecret,
       });
 
       client.data.userId = payload.sub;

@@ -31,4 +31,15 @@ export class ActivityService {
   async onTaskCommented(event: TaskCommentedEvent) {
     await this.log({ userId: event.actorId, taskId: event.task.id, action: 'task.commented', metadata: { title: event.task.title } });
   }
+
+   async getProjectActivity(projectId: string, limit = 30) {
+    return this.prisma.activityLog.findMany({
+      where: { projectId },
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
 }

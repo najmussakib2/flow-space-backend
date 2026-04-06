@@ -26,7 +26,11 @@ export default {
     apiKey: process.env.CLOUDINARY_API_KEY,
     apiSecret: process.env.CLOUDINARY_API_SECRET,
   },
-  openai: {
-    apiKey: process.env.OPENAI_API_KEY,
-  },
+
+  ai: { 
+    provider: process.env.AI_PROVIDER,
+    openai_apiKey: process.env.OPENAI_API_KEY,
+    claude_anthropic_apiKey: process.env.ANTHROPIC_API_KEY,
+    groq_apiKey: process.env.GROQ_API_KEY
+  }
 };

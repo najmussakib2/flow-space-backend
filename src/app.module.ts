@@ -24,6 +24,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import configuration from './config/configuration';
+import { DatabaseService } from './database/database.service';
 
 @Module({
   imports: [
@@ -46,7 +47,7 @@ import configuration from './config/configuration';
     DatabaseModule,
   ],
   controllers: [AppController],
-  providers: [AppService,
+  providers: [AppService, DatabaseService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },

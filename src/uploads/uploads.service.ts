@@ -10,9 +10,9 @@ import config from 'config';
 export class UploadsService {
   constructor(private configService: ConfigService) {
     cloudinary.config({
-      cloud_name: this.configService.get<string>('cloudinary.cloudName'),
-      api_key: this.configService.get<string>('cloudinary.apiKey'),
-      api_secret: this.configService.get<string>('cloudinary.apiSecret'),
+      cloud_name: this.configService.get<string>('cloudinary.cloudName') ?? config.cloudinary.cloudName,
+      api_key: this.configService.get<string>('cloudinary.apiKey') ?? config.cloudinary.apiKey,
+      api_secret: this.configService.get<string>('cloudinary.apiSecret') ?? config.cloudinary.apiSecret,
     });
   }
 
@@ -22,15 +22,15 @@ export class UploadsService {
 
     const signature = cloudinary.utils.api_sign_request(
       { timestamp, folder },
-      this.configService.get<string>('cloudinary.apiSecret')??config.cloudinary.apiSecret as string,
+      this.configService.get<string>('cloudinary.apiSecret') ?? config.cloudinary.apiSecret as string,
     );
-
+    const cloudeName = this.configService.get('cloudinary.cloudName') as string ?? config.cloudinary.cloudName;
     return {
-      uploadUrl: `https://api.cloudinary.com/v1_1/${this.configService.get('cloudinary.cloudName')}/auto/upload`,
+      uploadUrl: `https://api.cloudinary.com/v1_1/${cloudeName}/auto/upload`,
       signature,
       timestamp,
       folder,
-      apiKey: this.configService.get<string>('cloudinary.apiKey'),
+      apiKey: this.configService.get<string>('cloudinary.apiKey') ?? config.cloudinary.apiKey,
     };
   }
 

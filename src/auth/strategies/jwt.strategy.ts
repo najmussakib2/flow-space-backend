@@ -12,10 +12,16 @@ import config from 'config';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(private configService: ConfigService, private prisma: DatabaseService) {
+ const secret = configService.get<string>('jwt.accessSecret')?? config.jwt.accessSecret;
+
+    if (!secret) {
+      throw new Error('JWT_ACCESS_SECRET is not set in environment variables!');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('jwt.refreshSecret') ?? config.jwt.refreshSecret as string,
+      secretOrKey: secret,
     });
   }
 

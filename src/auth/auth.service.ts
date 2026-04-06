@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { DatabaseService } from 'src/database/database.service';
+import config from 'config';
 
 @Injectable()
 export class AuthService {
@@ -101,17 +102,19 @@ export class AuthService {
   }
 
   private signAccess(userId: string, email: string) {
+    const accessSecret = this.configService.get('jwt.accessSecret') ?? config.jwt.accessSecret;
+    const accessExpiry = this.configService.get('jwt.accessExpiry') ?? config.jwt.accessExpiry;
     return this.jwtService.sign(
       { sub: userId, email },
       {
-        secret: this.configService.get('jwt.accessSecret'),
-        expiresIn: this.configService.get('jwt.accessExpiry'),
+        secret: accessSecret,
+        expiresIn: accessExpiry,
       },
     );
   }
 
   private getRefreshExpiry() {
-    const expiry = this.configService.get<string>('jwt.refreshExpiry') || '7d';
+    const expiry = this.configService.get<string>('jwt.refreshExpiry')|| config.jwt.refreshExpiry || '7d';
     const days = parseInt(expiry.replace('d', ''));
     const d = new Date();
     d.setDate(d.getDate() + days);

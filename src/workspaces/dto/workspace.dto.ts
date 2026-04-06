@@ -4,9 +4,9 @@ import { IsString, IsOptional, IsEmail, IsEnum, MinLength, MaxLength, Matches } 
 import { WorkspaceRole } from 'generated/prisma/enums';
 
 export class CreateWorkspaceDto {
-  @ApiProperty() @IsString() @MinLength(2) @MaxLength(50) name: string;
+  @ApiProperty() @IsString() @MinLength(2) @MaxLength(50) name!: string;
   
-   @ApiProperty() @IsString() @Matches(/^[a-z0-9-]+$/) @MinLength(2) @MaxLength(50) slug: string;
+   @ApiProperty() @IsString() @Matches(/^[a-z0-9-]+$/) @MinLength(2) @MaxLength(50) slug!: string;
 }
 
 export class UpdateWorkspaceDto {
@@ -15,6 +15,6 @@ export class UpdateWorkspaceDto {
 }
 
 export class InviteMemberDto {
-  @ApiProperty() @IsEmail() email: string;
-  @ApiProperty() @IsEnum(WorkspaceRole) role: WorkspaceRole;
+  @ApiProperty() @IsEmail() email!: string;
+  @ApiProperty() @IsEnum(WorkspaceRole) role!: WorkspaceRole;
 }

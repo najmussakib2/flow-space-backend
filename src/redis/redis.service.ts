@@ -7,6 +7,7 @@
 /* eslint-disable prettier/prettier */
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import config from 'config';
 import Redis from 'ioredis';
 
 @Injectable()
@@ -17,7 +18,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     constructor(private configService: ConfigService) { }
 
     onModuleInit() {
-        const redisUrl = this.configService.get<string>('redis.url') ?? 'redis://redis:6379';
+        const redisUrl = this.configService.get<string>('redis.url') ?? config.redisUrl ?? 'redis://redis:6379';
 
         this.client = new Redis(redisUrl, {
             retryStrategy: (times) => Math.min(times * 50, 2000),

@@ -22,4 +22,5 @@ export default () => ({
     apiSecret: process.env.CLOUDINARY_API_SECRET,
   },
   openai: { apiKey: process.env.OPENAI_API_KEY },
+  claude: { anthropic: {apiKey: process.env.OPENAI_API_KEY }},
 })

@@ -10,6 +10,7 @@ import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
 // import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser, Public } from '../common/decorators/public.decorator';
 import { ConfigService } from '@nestjs/config';
+import config from 'config';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -62,7 +63,8 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
-    res.redirect(`${this.configService.get('frontendUrl')}/auth/callback?${params}`);
+    const frontendUrl = this.configService.get('frontendUrl')as string ?? config.frontendUrl
+    res.redirect(`${frontendUrl}/auth/callback?${params}`);
   }
 
   @Get('me')
