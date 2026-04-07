@@ -1,98 +1,314 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# FlowSpace Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+> AI-Augmented Team Productivity OS — REST API + WebSocket Server
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+[![NestJS](https://img.shields.io/badge/NestJS-10-E0234E?style=flat-square&logo=nestjs)](https://nestjs.com)
+[![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?style=flat-square&logo=prisma)](https://prisma.io)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql)](https://postgresql.org)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis)](https://redis.io)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript)](https://typescriptlang.org)
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Overview
 
-## Project setup
+FlowSpace is a production-grade team productivity SaaS backend powering real-time Kanban boards, collaborative document editing, AI assistance, and event-driven notifications. Built with a modular NestJS architecture, Redis-backed WebSocket presence, and a fully decoupled event system.
 
-```bash
-$ npm install
+**Live API:** `https://your-backend.railway.app/api/v1`
+**Swagger Docs:** `https://your-backend.railway.app/api/docs`
+**Frontend Repo:** [flowspace-frontend](#)
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | NestJS 10 + TypeScript |
+| Database | PostgreSQL 16 via Prisma 7 + pg.Pool adapter |
+| Cache / Presence | Redis 7 + ioredis |
+| Real-time | Socket.io + NestJS WebSocket Gateway |
+| Auth | JWT (access + refresh rotation) + Google OAuth 2.0 |
+| AI | Groq Llama 3.1 / OpenAI GPT-4o-mini |
+| Storage | Cloudinary (signed upload flow) |
+| Docs | Swagger / OpenAPI |
+| Deployment | Railway |
+
+---
+
+## Architecture
+```
+┌─────────────────────────────────────────────────────┐
+│                   NestJS Application                │
+│                                                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
+│  │   Auth   │  │  Tasks   │  │  Notifications   │  │
+│  │  Module  │  │  Module  │  │     Module       │  │
+│  └──────────┘  └────┬─────┘  └────────┬─────────┘  │
+│                     │ fires event      │ listens     │
+│                     └──────────────────┘            │
+│                    EventEmitter2                     │
+│                                                     │
+│  ┌──────────────────────────────────────────────┐   │
+│  │           WebSocket Gateway                  │   │
+│  │     Redis presence tracking per socket       │   │
+│  └──────────────────────────────────────────────┘   │
+└───────────────────────┬─────────────────────────────┘
+                        │
+          ┌─────────────┴─────────────┐
+          │                           │
+    ┌─────▼──────┐           ┌────────▼───────┐
+    │ PostgreSQL │           │     Redis      │
+    │  Prisma 7  │           │  ioredis       │
+    └────────────┘           └────────────────┘
 ```
 
-## Compile and run the project
+---
 
+## Modules
+
+| Module | Responsibility |
+|---|---|
+| `AuthModule` | JWT auth, refresh token rotation, Google OAuth 2.0 |
+| `UsersModule` | User profile management |
+| `WorkspacesModule` | Multi-tenant workspaces, RBAC, invite system |
+| `ProjectsModule` | Projects with auto-created Kanban boards |
+| `TasksModule` | Tasks, comments, drag-and-drop ordering, domain events |
+| `DocumentsModule` | Tiptap-compatible JSON document storage |
+| `NotificationsModule` | Event-driven notifications → DB + WebSocket push |
+| `ActivityModule` | Audit log, listens to task domain events |
+| `GatewayModule` | WebSocket gateway, Redis presence, document rooms |
+| `SearchModule` | Full-text search across tasks, docs, projects |
+| `UploadsModule` | Cloudinary signed upload URL generation |
+| `AiModule` | Summarize docs, generate subtasks, AI chat |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Docker + Docker Compose
+
+### 1. Clone and install
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/yourusername/flowspace-backend.git
+cd flowspace-backend
+npm install
 ```
 
-## Run tests
-
+### 2. Configure environment
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cp .env.example .env
 ```
+
+Fill in your values:
+```env
+DATABASE_URL="postgresql://flowspace:flowspace@localhost:5432/flowspace"
+REDIS_URL="redis://localhost:6379"
+
+JWT_ACCESS_SECRET="your-access-secret-min-32-chars"
+JWT_REFRESH_SECRET="your-refresh-secret-min-32-chars"
+JWT_ACCESS_EXPIRY="15m"
+JWT_REFRESH_EXPIRY="7d"
+
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+GOOGLE_CALLBACK_URL="http://localhost:3001/api/v1/auth/google/callback"
+
+GROQ_API_KEY=""
+
+CLOUDINARY_CLOUD_NAME=""
+CLOUDINARY_API_KEY=""
+CLOUDINARY_API_SECRET=""
+
+FRONTEND_URL="http://localhost:3000"
+PORT=3001
+NODE_ENV="development"
+```
+
+### 3. Start infrastructure
+```bash
+docker-compose up -d
+```
+
+Starts PostgreSQL on `5432` and Redis on `6379`.
+
+### 4. Run migrations and seed
+```bash
+npx prisma migrate dev --name init
+npx prisma db seed
+```
+
+Seed creates two demo accounts:
+| Email | Password | Role |
+|---|---|---|
+| alice@flowspace.dev | password123 | Owner |
+| bob@flowspace.dev | password123 | Member |
+
+### 5. Start development server
+```bash
+npm run start:dev
+```
+
+| URL | Description |
+|---|---|
+| `http://localhost:3001` | API landing page |
+| `http://localhost:3001/api/v1` | API base URL |
+| `http://localhost:3001/api/docs` | Swagger UI |
+| `ws://localhost:3001/ws` | WebSocket endpoint |
+
+---
+
+## API Reference
+
+### Auth
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/auth/register` | Register new user | Public |
+| POST | `/auth/login` | Login with email + password | Public |
+| POST | `/auth/refresh` | Rotate refresh token | Public |
+| POST | `/auth/logout` | Logout current session | Bearer |
+| GET | `/auth/google` | Initiate Google OAuth | Public |
+| GET | `/auth/me` | Get current user | Bearer |
+
+### Workspaces
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/workspaces` | Get all workspaces for current user |
+| POST | `/workspaces` | Create workspace |
+| GET | `/workspaces/:slug` | Get workspace with members + projects |
+| PATCH | `/workspaces/:id` | Update workspace (admin+) |
+| POST | `/workspaces/:id/members/invite` | Invite member |
+| DELETE | `/workspaces/:id/members/:userId` | Remove member |
+
+### Projects
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/projects/workspace/:workspaceId` | List projects in workspace |
+| POST | `/projects` | Create project (auto-creates 4 boards) |
+| GET | `/projects/:id` | Full board with all tasks |
+| PATCH | `/projects/:id` | Update project |
+| DELETE | `/projects/:id` | Soft delete project |
+
+### Tasks
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/tasks` | Create task |
+| GET | `/tasks/:id` | Get task with comments + activity |
+| PATCH | `/tasks/:id` | Update task |
+| PATCH | `/tasks/:id/move` | Move task between columns |
+| DELETE | `/tasks/:id` | Soft delete task |
+| POST | `/tasks/:id/comments` | Add comment |
+| DELETE | `/tasks/:taskId/comments/:commentId` | Delete comment |
+
+### AI
+| Method | Endpoint | Body | Description |
+|---|---|---|---|
+| POST | `/ai/summarize` | `{ content }` | Summarize document text |
+| POST | `/ai/generate-subtasks` | `{ taskTitle, taskDescription? }` | Generate subtasks |
+| POST | `/ai/chat` | `{ message, context? }` | AI assistant chat |
+
+### Other
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/search?q=&workspaceId=` | Global search |
+| GET | `/notifications` | Paginated notifications |
+| PATCH | `/notifications/:id/read` | Mark as read |
+| PATCH | `/notifications/read-all` | Mark all as read |
+| GET | `/activity/project/:projectId` | Project activity log |
+| POST | `/uploads/presigned-url` | Get Cloudinary upload URL |
+
+---
+
+## WebSocket Events
+
+Connect to `ws://localhost:3001/ws` with JWT in handshake:
+```javascript
+const socket = io('http://localhost:3001/ws', {
+  auth: { token: accessToken }
+});
+```
+
+### Client → Server
+| Event | Payload | Description |
+|---|---|---|
+| `join:workspace` | `workspaceId` | Join workspace room |
+| `leave:workspace` | `workspaceId` | Leave workspace room |
+| `join:document` | `documentId` | Join document collaboration room |
+| `leave:document` | `documentId` | Leave document room |
+| `document:update` | `{ documentId, content, version }` | Broadcast document changes |
+| `cursor:update` | `{ documentId, position, color }` | Broadcast cursor position |
+| `ping` | — | Heartbeat |
+
+### Server → Client
+| Event | Payload | Description |
+|---|---|---|
+| `notification:new` | `Notification` | New notification pushed in real-time |
+| `member:online` | `{ userId }` | Member came online in workspace |
+| `member:offline` | `{ userId }` | Member went offline |
+| `collaborator:joined` | `{ userId, socketId }` | Someone joined your document |
+| `collaborator:left` | `{ userId }` | Someone left your document |
+| `document:updated` | `{ content, version, userId }` | Document content changed |
+| `cursor:updated` | `{ userId, position, color }` | Cursor position changed |
+
+---
+
+## Auth Flow
+```
+1. POST /auth/login → { accessToken (15m), refreshToken (7d) }
+         ↓
+2. Every request → Authorization: Bearer <accessToken>
+         ↓
+3. Token expires → POST /auth/refresh { refreshToken }
+                → { new accessToken, new refreshToken }  ← old token invalidated
+         ↓
+4. WebSocket → io('/ws', { auth: { token: accessToken } })
+```
+
+Refresh tokens are stored in PostgreSQL `sessions` table. Each refresh rotates the token, preventing reuse attacks while supporting multi-device sessions.
+
+---
+
+## Database Schema
+
+14 models across 5 domains:
+```
+Auth:         User, Session
+Workspace:    Workspace, WorkspaceMember, WorkspaceInvite
+Project:      Project, Board
+Task:         Task, Label, Comment, Attachment
+Document:     Document
+Observability: Notification, ActivityLog
+```
+
+---
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Railway (recommended)
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+1. Push to GitHub
+2. Connect repo to [Railway](https://railway.app)
+3. Add PostgreSQL and Redis plugins
+4. Set environment variables in Railway dashboard
+5. Railway auto-deploys on every `git push`
 
+### Docker
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+docker build -t flowspace-backend .
+docker run -p 3001:3001 --env-file .env flowspace-backend
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Scripts
+```bash
+npm run start:dev      # Development with hot reload
+npm run build          # Production build
+npm run start          # Start production build
+npm run prisma:migrate # Run database migrations
+npm run prisma:seed    # Seed demo data
+npm run prisma:studio  # Open Prisma Studio
+```
