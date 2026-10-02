@@ -23,14 +23,22 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import configuration from './config/configuration';
+import configuration from './configuration/configuration';
 import { DatabaseService } from './database/database.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
+    }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
-    EventEmitterModule.forRoot({ wildcard: false, delimiter: '.', maxListeners: 20 }),
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      maxListeners: 20,
+    }),
     RedisModule,
     GatewayModule,
     AuthModule,
@@ -47,11 +55,13 @@ import { DatabaseService } from './database/database.service';
     DatabaseModule,
   ],
   controllers: [AppController],
-  providers: [AppService, DatabaseService,
+  providers: [
+    AppService,
+    DatabaseService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })
-export class AppModule { }
+export class AppModule {}
