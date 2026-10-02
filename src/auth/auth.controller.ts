@@ -1,7 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable prettier/prettier */
-import { Controller, Post, Get, Body, Req, Res, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Req,
+  Res,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
@@ -10,12 +20,15 @@ import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
 // import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser, Public } from '../common/decorators/public.decorator';
 import { ConfigService } from '@nestjs/config';
-import config from 'config';
+import config from '../../config';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService, private configService: ConfigService) {}
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {}
 
   @Public()
   @Post('register')
@@ -58,12 +71,17 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: Request, @Res() res: Response) {
-    const result = await this.authService.googleLogin(req.user, req.headers['user-agent'], req.ip);
+    const result = await this.authService.googleLogin(
+      req.user,
+      req.headers['user-agent'],
+      req.ip,
+    );
     const params = new URLSearchParams({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
-    const frontendUrl = this.configService.get('frontendUrl')as string ?? config.frontendUrl
+    const frontendUrl =
+      (this.configService.get('frontendUrl') as string) ?? config.frontendUrl;
     res.redirect(`${frontendUrl}/auth/callback?${params}`);
   }
 

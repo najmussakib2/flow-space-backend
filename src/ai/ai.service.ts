@@ -6,7 +6,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import config from 'config';   // your custom config file
+import config from '../../config'; // your custom config file
 
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
@@ -37,14 +37,20 @@ export class AiService {
     });
 
     // Determine which provider to use (supports both ConfigService and your custom config)
-    const providerFromEnv = this.configService.get<string>('AI_PROVIDER')?.toLowerCase();
+    const providerFromEnv = this.configService
+      .get<string>('AI_PROVIDER')
+      ?.toLowerCase();
     const providerFromConfig = config.ai?.provider?.toLowerCase();
 
-    const provider = (providerFromEnv || providerFromConfig) as AiProvider | undefined;
+    const provider = (providerFromEnv || providerFromConfig) as
+      | AiProvider
+      | undefined;
 
     if (provider && ['groq', 'openai', 'anthropic'].includes(provider)) {
       this.currentProvider = provider;
-      console.log(`🚀 AI Provider initialized: ${this.currentProvider.toUpperCase()}`);
+      console.log(
+        `🚀 AI Provider initialized: ${this.currentProvider.toUpperCase()}`,
+      );
     } else {
       console.log(`🚀 AI Provider initialized (default): GROQ`);
     }
@@ -59,14 +65,16 @@ export class AiService {
     let key: string | undefined;
 
     if (provider === 'groq') {
-      key = this.configService.get<string>('GROQ_API_KEY') ?? config.ai.groq_apiKey;
-    } 
-    else if (provider === 'openai') {
-      key = this.configService.get<string>('OPENAI_API_KEY') ?? config.ai.openai_apiKey;
-    } 
-    else if (provider === 'anthropic') {
-      key = this.configService.get<string>('ANTHROPIC_API_KEY') ?? 
-            config.ai.claude_anthropic_apiKey;
+      key =
+        this.configService.get<string>('GROQ_API_KEY') ?? config.ai.groq_apiKey;
+    } else if (provider === 'openai') {
+      key =
+        this.configService.get<string>('OPENAI_API_KEY') ??
+        config.ai.openai_apiKey;
+    } else if (provider === 'anthropic') {
+      key =
+        this.configService.get<string>('ANTHROPIC_API_KEY') ??
+        config.ai.claude_anthropic_apiKey;
     }
 
     if (!key) {
@@ -107,7 +115,11 @@ export class AiService {
   }
 
   // ====================== Groq ======================
-  private async completeWithGroq(system: string, prompt: string, maxTokens: number): Promise<string> {
+  private async completeWithGroq(
+    system: string,
+    prompt: string,
+    maxTokens: number,
+  ): Promise<string> {
     const res = await this.groq.chat.completions.create({
       model: 'llama-3.1-8b-instant',
       max_tokens: maxTokens,
@@ -120,7 +132,11 @@ export class AiService {
   }
 
   // ====================== OpenAI ======================
-  private async completeWithOpenAI(system: string, prompt: string, maxTokens: number): Promise<string> {
+  private async completeWithOpenAI(
+    system: string,
+    prompt: string,
+    maxTokens: number,
+  ): Promise<string> {
     const res = await this.openai.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: maxTokens,
@@ -133,7 +149,11 @@ export class AiService {
   }
 
   // ====================== Anthropic ======================
-  private async completeWithAnthropic(system: string, prompt: string, maxTokens: number): Promise<string> {
+  private async completeWithAnthropic(
+    system: string,
+    prompt: string,
+    maxTokens: number,
+  ): Promise<string> {
     const res = await this.anthropic.messages.create({
       model: 'claude-3-haiku-20240307',
       max_tokens: maxTokens,
@@ -153,7 +173,10 @@ export class AiService {
     );
   }
 
-  async generateSubtasks(taskTitle: string, description?: string): Promise<string[]> {
+  async generateSubtasks(
+    taskTitle: string,
+    description?: string,
+  ): Promise<string[]> {
     const prompt = description
       ? `Task: ${taskTitle}\nDescription: ${description}`
       : `Task: ${taskTitle}`;

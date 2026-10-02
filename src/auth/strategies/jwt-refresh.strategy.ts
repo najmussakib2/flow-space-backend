@@ -8,15 +8,23 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { DatabaseService } from 'src/database/database.service';
-import config from 'config';
+import config from '../../../config';
 
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
-  constructor(private configService: ConfigService, private prisma: DatabaseService) {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
+  constructor(
+    private configService: ConfigService,
+    private prisma: DatabaseService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('jwt.refreshSecret') ?? config.jwt.refreshSecret as string,
+      secretOrKey:
+        configService.get<string>('jwt.refreshSecret') ??
+        (config.jwt.refreshSecret as string),
       passReqToCallback: true,
     });
   }

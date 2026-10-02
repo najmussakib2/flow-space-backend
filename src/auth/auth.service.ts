@@ -1,14 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable prettier/prettier */
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { DatabaseService } from 'src/database/database.service';
-import config from 'config';
+import config from '../../config';
 
 @Injectable()
 export class AuthService {
@@ -19,16 +23,28 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto, userAgent?: string, ip?: string) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
     if (existing) throw new ConflictException('Email already registered');
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const user = await this.prisma.user.create({
-      data: { email: dto.email, name: dto.name, passwordHash, isVerified: true },
+      data: {
+        email: dto.email,
+        name: dto.name,
+        passwordHash,
+        isVerified: true,
+      },
       select: { id: true, email: true, name: true, avatarUrl: true },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, userAgent, ip);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      userAgent,
+      ip,
+    );
     return { user, ...tokens };
   }
 
@@ -36,28 +52,51 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email, deletedAt: null },
     });
-    if (!user || !user.passwordHash) throw new UnauthorizedException('Invalid credentials');
+    if (!user || !user.passwordHash)
+      throw new UnauthorizedException('Invalid credentials');
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    const tokens = await this.generateTokens(user.id, user.email, userAgent, ip);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      userAgent,
+      ip,
+    );
     return {
-      user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+      },
       ...tokens,
     };
   }
 
   async googleLogin(googleUser: any, userAgent?: string, ip?: string) {
-    let user = await this.prisma.user.findUnique({ where: { email: googleUser.email } });
+    let user = await this.prisma.user.findUnique({
+      where: { email: googleUser.email },
+    });
     if (!user) {
       user = await this.prisma.user.create({
         data: { ...googleUser, isVerified: true },
       });
     }
-    const tokens = await this.generateTokens(user.id, user.email, userAgent, ip);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      userAgent,
+      ip,
+    );
     return {
-      user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+      },
       ...tokens,
     };
   }
@@ -91,7 +130,12 @@ export class AuthService {
     await this.prisma.session.deleteMany({ where: { userId } });
   }
 
-  private async generateTokens(userId: string, email: string, userAgent?: string, ip?: string) {
+  private async generateTokens(
+    userId: string,
+    email: string,
+    userAgent?: string,
+    ip?: string,
+  ) {
     const accessToken = this.signAccess(userId, email);
     const refreshToken = uuidv4();
     const expiresAt = this.getRefreshExpiry();
@@ -102,8 +146,10 @@ export class AuthService {
   }
 
   private signAccess(userId: string, email: string) {
-    const accessSecret = this.configService.get('jwt.accessSecret') ?? config.jwt.accessSecret;
-    const accessExpiry = this.configService.get('jwt.accessExpiry') ?? config.jwt.accessExpiry;
+    const accessSecret =
+      this.configService.get('jwt.accessSecret') ?? config.jwt.accessSecret;
+    const accessExpiry =
+      this.configService.get('jwt.accessExpiry') ?? config.jwt.accessExpiry;
     return this.jwtService.sign(
       { sub: userId, email },
       {
@@ -114,7 +160,10 @@ export class AuthService {
   }
 
   private getRefreshExpiry() {
-    const expiry = this.configService.get<string>('jwt.refreshExpiry')|| config.jwt.refreshExpiry || '7d';
+    const expiry =
+      this.configService.get<string>('jwt.refreshExpiry') ||
+      config.jwt.refreshExpiry ||
+      '7d';
     const days = parseInt(expiry.replace('d', ''));
     const d = new Date();
     d.setDate(d.getDate() + days);

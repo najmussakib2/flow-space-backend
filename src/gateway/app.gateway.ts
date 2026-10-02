@@ -3,9 +3,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable prettier/prettier */
 import {
-  WebSocketGateway, WebSocketServer, OnGatewayInit,
-  OnGatewayConnection, OnGatewayDisconnect,
-  SubscribeMessage, MessageBody, ConnectedSocket,
+  WebSocketGateway,
+  WebSocketServer,
+  OnGatewayInit,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
@@ -13,13 +18,18 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../redis/redis.service';
 import { GatewayService } from './gateway.service';
-import config from 'config';
+import config from '../../config';
 
 @WebSocketGateway({
-  cors: { origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true },
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+  },
   namespace: '/ws',
 })
-export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class AppGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(AppGateway.name);
 
@@ -37,12 +47,17 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
 
   async handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth?.token ||
+      const token =
+        client.handshake.auth?.token ||
         client.handshake.headers?.authorization?.replace('Bearer ', '');
-      if (!token) { client.disconnect(); return; }
+      if (!token) {
+        client.disconnect();
+        return;
+      }
 
       const payload = this.jwtService.verify(token, {
-        secret: this.configService.get('jwt.accessSecret') ?? config.jwt.accessSecret,
+        secret:
+          this.configService.get('jwt.accessSecret') ?? config.jwt.accessSecret,
       });
 
       client.data.userId = payload.sub;
@@ -59,20 +74,33 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   }
 
   @SubscribeMessage('join:workspace')
-  async joinWorkspace(@ConnectedSocket() client: Socket, @MessageBody() workspaceId: string) {
+  async joinWorkspace(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() workspaceId: string,
+  ) {
     client.join(`workspace:${workspaceId}`);
-    client.to(`workspace:${workspaceId}`).emit('member:online', { userId: client.data.userId });
+    client
+      .to(`workspace:${workspaceId}`)
+      .emit('member:online', { userId: client.data.userId });
     return { status: 'joined', workspaceId };
   }
 
   @SubscribeMessage('leave:workspace')
-  async leaveWorkspace(@ConnectedSocket() client: Socket, @MessageBody() workspaceId: string) {
+  async leaveWorkspace(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() workspaceId: string,
+  ) {
     client.leave(`workspace:${workspaceId}`);
-    client.to(`workspace:${workspaceId}`).emit('member:offline', { userId: client.data.userId });
+    client
+      .to(`workspace:${workspaceId}`)
+      .emit('member:offline', { userId: client.data.userId });
   }
 
   @SubscribeMessage('join:document')
-  async joinDocument(@ConnectedSocket() client: Socket, @MessageBody() documentId: string) {
+  async joinDocument(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() documentId: string,
+  ) {
     client.join(`doc:${documentId}`);
     client.to(`doc:${documentId}`).emit('collaborator:joined', {
       userId: client.data.userId,
@@ -81,9 +109,14 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   }
 
   @SubscribeMessage('leave:document')
-  async leaveDocument(@ConnectedSocket() client: Socket, @MessageBody() documentId: string) {
+  async leaveDocument(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() documentId: string,
+  ) {
     client.leave(`doc:${documentId}`);
-    client.to(`doc:${documentId}`).emit('collaborator:left', { userId: client.data.userId });
+    client
+      .to(`doc:${documentId}`)
+      .emit('collaborator:left', { userId: client.data.userId });
   }
 
   @SubscribeMessage('document:update')
